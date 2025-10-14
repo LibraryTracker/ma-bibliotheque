@@ -531,6 +531,92 @@
             background: linear-gradient(135deg, #f5f1e8, #e8f0e8);
             transform: translateY(-2px);
         }
+
+        /* POPUP STYLES */
+        .popup-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            display: none !important;
+            justify-content: center !important;
+            align-items: center !important;
+            z-index: 99999 !important;
+            backdrop-filter: blur(5px);
+        }
+
+        .popup-overlay:not(.hidden) {
+            display: flex !important;
+        }
+
+        .popup-box {
+            background: linear-gradient(135deg, rgb(255, 255, 255), rgb(245, 241, 232)) !important;
+            padding: 40px !important;
+            border-radius: 20px !important;
+            border: 3px solid rgba(159, 179, 153, 0.5) !important;
+            box-shadow: 0 25px 70px rgba(103, 125, 99, 0.4) !important;
+            max-width: 500px !important;
+            width: 90% !important;
+            text-align: center !important;
+            position: relative !important;
+        }
+
+        .popup-box h3 {
+            color: #677d63 !important;
+            font-size: 1.8em !important;
+            margin-bottom: 20px !important;
+            font-family: 'Georgia', serif !important;
+        }
+
+        .popup-box p {
+            color: #7a8d76 !important;
+            font-size: 1.15em !important;
+            margin-bottom: 30px !important;
+            line-height: 1.6 !important;
+        }
+
+        .popup-buttons {
+            display: flex !important;
+            gap: 15px !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+        }
+
+        .popup-btn {
+            padding: 14px 32px !important;
+            border-radius: 25px !important;
+            font-size: 16px !important;
+            cursor: pointer !important;
+            border: none !important;
+            font-family: 'Georgia', serif !important;
+            transition: all 0.3s !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.5px !important;
+        }
+
+        .popup-btn-yes {
+            background: linear-gradient(135deg, #9fb399, #8a9d84) !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(159, 179, 153, 0.3) !important;
+        }
+
+        .popup-btn-yes:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 20px rgba(159, 179, 153, 0.4) !important;
+        }
+
+        .popup-btn-no {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 241, 232, 0.98)) !important;
+            color: #677d63 !important;
+            border: 2px solid #9fb399 !important;
+        }
+
+        .popup-btn-no:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 15px rgba(159, 179, 153, 0.3) !important;
+        }
         
         @media (max-width: 768px) {
             .container {
@@ -552,6 +638,18 @@
 
             .tabs {
                 flex-direction: column;
+            }
+
+            .popup-box {
+                padding: 30px 20px !important;
+            }
+
+            .popup-buttons {
+                flex-direction: column !important;
+            }
+
+            .popup-btn {
+                width: 100% !important;
             }
         }
     </style>
@@ -1107,16 +1205,13 @@
         async function togglePurchased(id, currentStatus) {
             if (!currentUser) return;
             
-            // Si on marque comme acheté (passage de false à true)
             if (!currentStatus) {
-                // Trouver l'item dans la wishlist
                 const item = wishlist.find(w => w.id === id);
                 if (item) {
                     pendingMoveItem = { id, item };
                     document.getElementById('moveToLibraryPopup').classList.remove('hidden');
                 }
             } else {
-                // Si on démarque comme acheté, juste mettre à jour
                 try {
                     const wishlistCollection = db.collection('users').doc(currentUser.uid).collection('wishlist');
                     await wishlistCollection.doc(id).update({
@@ -1135,7 +1230,6 @@
             try {
                 const { id, item } = pendingMoveItem;
                 
-                // Ajouter à la bibliothèque
                 const booksCollection = db.collection('users').doc(currentUser.uid).collection('books');
                 await booksCollection.add({
                     title: item.title,
@@ -1147,18 +1241,13 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
-                // Supprimer de la wishlist
                 const wishlistCollection = db.collection('users').doc(currentUser.uid).collection('wishlist');
                 await wishlistCollection.doc(id).delete();
                 
-                // Fermer la popup
                 document.getElementById('moveToLibraryPopup').classList.add('hidden');
                 pendingMoveItem = null;
                 
-                // Afficher un message de confirmation
                 alert('📚 Livre ajouté à votre bibliothèque ! 🌿');
-                
-                // Basculer vers l'onglet bibliothèque
                 switchTab('library');
                 
             } catch (error) {
@@ -1173,14 +1262,12 @@
             if (!currentUser || !pendingMoveItem) return;
 
             try {
-                // Juste marquer comme acheté sans déplacer
                 const { id } = pendingMoveItem;
                 const wishlistCollection = db.collection('users').doc(currentUser.uid).collection('wishlist');
                 await wishlistCollection.doc(id).update({
                     purchased: true
                 });
                 
-                // Fermer la popup
                 document.getElementById('moveToLibraryPopup').classList.add('hidden');
                 pendingMoveItem = null;
                 
