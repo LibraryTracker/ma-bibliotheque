@@ -42,6 +42,11 @@
             text-align: center;
             margin-bottom: 30px;
             font-size: 1.2em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
         }
         
         .form-section {
@@ -107,6 +112,12 @@
         button:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
         
         .search-filter {
@@ -205,6 +216,20 @@
             font-size: 1.5em;
             margin-bottom: 10px;
         }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+        
+        .btn-export {
+            background: white;
+            color: #667eea;
+            padding: 8px 20px;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -212,8 +237,8 @@
         <h1>📚 Ma Bibliothèque Personnelle</h1>
         
         <div class="stats">
-            <span id="bookCount">0 livre(s) dans votre bibliothèque</span>
-            <button onclick="exportToExcel()" style="margin-left: 20px; background: white; color: #667eea; padding: 8px 20px; font-size: 0.9em;">
+            <span id="bookCount">Chargement...</span>
+            <button onclick="exportToExcel()" class="btn-export">
                 📥 Exporter en Excel
             </button>
         </div>
@@ -302,23 +327,144 @@
             </select>
         </div>
         
-        <div id="booksContainer" class="books-grid"></div>
+        <div id="booksContainer" class="books-grid">
+            <div class="loading">Chargement de votre bibliothèque...</div>
+        </div>
     </div>
 
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- SheetJS pour export Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <script>
-        let books = [];
+        // ⚠️ REMPLACEZ CETTE CONFIGURATION PAR LA VÔTRE ⚠️
+        const firebaseConfig = {
+  apiKey: "AIzaSyBO_pUfo0gxhIEPfbtt5SLO8_T45wlrfHY",
+  authDomain: "ma-bibliotheque-8593f.firebaseapp.com",
+  projectId: "ma-bibliotheque-8593f",
+  storageBucket: "ma-bibliotheque-8593f.firebasestorage.app",
+  messagingSenderId: "233304625031",
+  appId: "1:233304625031:web:e135aeaac097a513580d22",
+  measurementId: "G-R8BFZVTDWH"
+};
+
+        // Initialisation Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const booksCollection = db.collection('books');
         
+        let books = [];
+        let unsubscribe = null;
+        
+        // Écouter les changements en temps réel
         function loadBooks() {
-            const saved = localStorage.getItem('myLibrary');
-            if (saved) {
-                books = JSON.parse(saved);
-            }
-            displayBooks();
+            unsubscribe = booksCollection.orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+                books = [];
+                snapshot.forEach((doc) => {
+                    books.push({ id: doc.id, ...doc.data() });
+                });
+                displayBooks();
+            }, (error) => {
+                console.error("Erreur lors du chargement:", error);
+                document.getElementById('booksContainer').innerHTML = `
+                    <div class="empty-state">
+                        <h3>❌ Erreur de connexion</h3>
+                        <p>Vérifiez votre configuration Firebase</p>
+                    </div>
+                `;
+            });
         }
         
-        function saveBooks() {
-            localStorage.setItem('myLibrary', JSON.stringify(books));
+        async function addBook(e) {
+            e.preventDefault();
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Ajout en cours...';
+            
+            try {
+                await booksCollection.add({
+                    title: document.getElementById('title').value,
+                    author: document.getElementById('author').value,
+                    year: document.getElementById('year').value,
+                    genre: document.getElementById('genre').value,
+                    tropes: document.getElementById('tropes').value,
+                    notes: document.getElementById('notes').value,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                document.getElementById('bookForm').reset();
+            } catch (error) {
+                console.error("Erreur lors de l'ajout:", error);
+                alert("Erreur lors de l'ajout du livre");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Ajouter à ma bibliothèque';
+            }
+        }
+        
+        async function deleteBook(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce livre ?')) {
+                try {
+                    await booksCollection.doc(id).delete();
+                } catch (error) {
+                    console.error("Erreur lors de la suppression:", error);
+                    alert("Erreur lors de la suppression du livre");
+                }
+            }
+        }
+        
+        function displayBooks() {
+            const container = document.getElementById('booksContainer');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filterGenre = document.getElementById('filterGenre').value;
+            
+            let filteredBooks = books.filter(book => {
+                const matchesSearch = book.title.toLowerCase().includes(searchTerm) || 
+                                     book.author.toLowerCase().includes(searchTerm);
+                const matchesGenre = !filterGenre || book.genre === filterGenre;
+                return matchesSearch && matchesGenre;
+            });
+            
+            document.getElementById('bookCount').textContent = 
+                `${books.length} livre(s) dans votre bibliothèque`;
+            
+            if (filteredBooks.length === 0 && books.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>📖 Aucun livre</h3>
+                        <p>Commencez par ajouter des livres à votre bibliothèque !</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            if (filteredBooks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>🔍 Aucun résultat</h3>
+                        <p>Aucun livre ne correspond à votre recherche</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredBooks.map(book => `
+                <div class="book-card">
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-author">par ${book.author}</div>
+                    ${book.year ? `<div class="book-info">📅 ${book.year}</div>` : ''}
+                    ${book.genre ? `<span class="genre-badge">${book.genre}</span>` : ''}
+                    ${book.tropes ? `<div class="book-info">💕 Tropes: ${book.tropes}</div>` : ''}
+                    ${book.notes ? `<div class="book-notes">💭 ${book.notes}</div>` : ''}
+                    <div class="book-actions">
+                        <button class="btn-delete" onclick="deleteBook('${book.id}')">Supprimer</button>
+                    </div>
+                </div>
+            `).join('');
         }
         
         function exportToExcel() {
@@ -355,78 +501,18 @@
             XLSX.writeFile(wb, `Ma_Bibliotheque_${date}.xlsx`);
         }
         
-        function addBook(e) {
-            e.preventDefault();
-            
-            const book = {
-                id: Date.now(),
-                title: document.getElementById('title').value,
-                author: document.getElementById('author').value,
-                year: document.getElementById('year').value,
-                genre: document.getElementById('genre').value,
-                tropes: document.getElementById('tropes').value,
-                notes: document.getElementById('notes').value
-            };
-            
-            books.push(book);
-            saveBooks();
-            displayBooks();
-            document.getElementById('bookForm').reset();
-        }
-        
-        function deleteBook(id) {
-            if (confirm('Êtes-vous sûr de vouloir supprimer ce livre ?')) {
-                books = books.filter(book => book.id !== id);
-                saveBooks();
-                displayBooks();
-            }
-        }
-        
-        function displayBooks() {
-            const container = document.getElementById('booksContainer');
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const filterGenre = document.getElementById('filterGenre').value;
-            
-            let filteredBooks = books.filter(book => {
-                const matchesSearch = book.title.toLowerCase().includes(searchTerm) || 
-                                     book.author.toLowerCase().includes(searchTerm);
-                const matchesGenre = !filterGenre || book.genre === filterGenre;
-                return matchesSearch && matchesGenre;
-            });
-            
-            document.getElementById('bookCount').textContent = 
-                `${books.length} livre(s) dans votre bibliothèque`;
-            
-            if (filteredBooks.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>📖 Aucun livre trouvé</h3>
-                        <p>Commencez par ajouter des livres à votre bibliothèque !</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = filteredBooks.map(book => `
-                <div class="book-card">
-                    <div class="book-title">${book.title}</div>
-                    <div class="book-author">par ${book.author}</div>
-                    ${book.year ? `<div class="book-info">📅 ${book.year}</div>` : ''}
-                    ${book.genre ? `<span class="genre-badge">${book.genre}</span>` : ''}
-                    ${book.tropes ? `<div class="book-info">💕 Tropes: ${book.tropes}</div>` : ''}
-                    ${book.notes ? `<div class="book-notes">💭 ${book.notes}</div>` : ''}
-                    <div class="book-actions">
-                        <button class="btn-delete" onclick="deleteBook(${book.id})">Supprimer</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
+        // Event listeners
         document.getElementById('bookForm').addEventListener('submit', addBook);
         document.getElementById('searchInput').addEventListener('input', displayBooks);
         document.getElementById('filterGenre').addEventListener('change', displayBooks);
         
+        // Charger les livres au démarrage
         loadBooks();
+        
+        // Nettoyer l'écouteur à la fermeture
+        window.addEventListener('beforeunload', () => {
+            if (unsubscribe) unsubscribe();
+        });
     </script>
 </body>
 </html>
