@@ -772,6 +772,18 @@
         </div>
     </div>
 
+    <!-- Popup pour basculer vers bibliothèque -->
+    <div id="moveToLibraryPopup" class="popup-overlay hidden">
+        <div class="popup-box">
+            <h3>📚 Ajouter à la bibliothèque ?</h3>
+            <p>Voulez-vous déplacer ce livre de votre wishlist vers votre bibliothèque ?</p>
+            <div class="popup-buttons">
+                <button class="popup-btn popup-btn-yes" onclick="confirmMoveToLibrary()">Oui, déplacer 🌿</button>
+                <button class="popup-btn popup-btn-no" onclick="cancelMoveToLibrary()">Non, garder en wishlist</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -797,6 +809,7 @@
         let unsubscribe = null;
         let unsubscribeWishlist = null;
         let currentUser = null;
+        let pendingMoveItem = null;
 
         // AUTH FUNCTIONS
         function showError(message) {
@@ -1094,14 +1107,88 @@
         async function togglePurchased(id, currentStatus) {
             if (!currentUser) return;
             
+            // Si on marque comme acheté (passage de false à true)
+            if (!currentStatus) {
+                // Trouver l'item dans la wishlist
+                const item = wishlist.find(w => w.id === id);
+                if (item) {
+                    pendingMoveItem = { id, item };
+                    document.getElementById('moveToLibraryPopup').classList.remove('hidden');
+                }
+            } else {
+                // Si on démarque comme acheté, juste mettre à jour
+                try {
+                    const wishlistCollection = db.collection('users').doc(currentUser.uid).collection('wishlist');
+                    await wishlistCollection.doc(id).update({
+                        purchased: false
+                    });
+                } catch (error) {
+                    console.error("Erreur lors de la mise à jour:", error);
+                    alert("Erreur lors de la mise à jour du statut");
+                }
+            }
+        }
+
+        async function confirmMoveToLibrary() {
+            if (!currentUser || !pendingMoveItem) return;
+
             try {
+                const { id, item } = pendingMoveItem;
+                
+                // Ajouter à la bibliothèque
+                const booksCollection = db.collection('users').doc(currentUser.uid).collection('books');
+                await booksCollection.add({
+                    title: item.title,
+                    author: item.author,
+                    year: item.releaseDate ? new Date(item.releaseDate).getFullYear() : '',
+                    genre: '',
+                    tropes: '',
+                    notes: item.notes || `Acheté le ${new Date().toLocaleDateString('fr-FR')} - Prix: ${item.price || 'N/A'}`,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Supprimer de la wishlist
+                const wishlistCollection = db.collection('users').doc(currentUser.uid).collection('wishlist');
+                await wishlistCollection.doc(id).delete();
+                
+                // Fermer la popup
+                document.getElementById('moveToLibraryPopup').classList.add('hidden');
+                pendingMoveItem = null;
+                
+                // Afficher un message de confirmation
+                alert('📚 Livre ajouté à votre bibliothèque ! 🌿');
+                
+                // Basculer vers l'onglet bibliothèque
+                switchTab('library');
+                
+            } catch (error) {
+                console.error("Erreur lors du déplacement:", error);
+                alert("Erreur lors du déplacement du livre");
+                document.getElementById('moveToLibraryPopup').classList.add('hidden');
+                pendingMoveItem = null;
+            }
+        }
+
+        async function cancelMoveToLibrary() {
+            if (!currentUser || !pendingMoveItem) return;
+
+            try {
+                // Juste marquer comme acheté sans déplacer
+                const { id } = pendingMoveItem;
                 const wishlistCollection = db.collection('users').doc(currentUser.uid).collection('wishlist');
                 await wishlistCollection.doc(id).update({
-                    purchased: !currentStatus
+                    purchased: true
                 });
+                
+                // Fermer la popup
+                document.getElementById('moveToLibraryPopup').classList.add('hidden');
+                pendingMoveItem = null;
+                
             } catch (error) {
                 console.error("Erreur lors de la mise à jour:", error);
                 alert("Erreur lors de la mise à jour du statut");
+                document.getElementById('moveToLibraryPopup').classList.add('hidden');
+                pendingMoveItem = null;
             }
         }
 
