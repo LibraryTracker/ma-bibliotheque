@@ -62,7 +62,6 @@
             opacity: 0.5;
         }
 
-        /* AUTH STYLES */
         .auth-container {
             max-width: 450px;
             margin: 80px auto;
@@ -206,6 +205,47 @@
             margin: 20px 0;
             font-size: 1.5em;
             color: #8a9d84;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid rgba(159, 179, 153, 0.2);
+        }
+
+        .tab {
+            background: transparent;
+            color: #8a9d84;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 0;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            box-shadow: none;
+        }
+
+        .tab:hover {
+            color: #677d63;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .tab.active {
+            color: #677d63;
+            border-bottom-color: #9fb399;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
         
         .stats {
@@ -372,6 +412,21 @@
             font-size: 2em;
             opacity: 0.15;
         }
+
+        .purchased {
+            opacity: 0.6;
+        }
+
+        .purchased .book-card::after {
+            content: '✓ Acheté';
+            background: #9fb399;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+            opacity: 1;
+        }
         
         .book-title {
             font-size: 1.3em;
@@ -407,6 +462,7 @@
             margin-top: 18px;
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         
         .btn-delete {
@@ -418,6 +474,17 @@
         
         .btn-delete:hover {
             background: linear-gradient(135deg, #a89886, #968474);
+        }
+
+        .btn-toggle-purchased {
+            background: linear-gradient(135deg, #9fb399, #8a9d84);
+            font-size: 14px;
+            padding: 10px 20px;
+            border-radius: 20px;
+        }
+
+        .btn-toggle-purchased:hover {
+            background: linear-gradient(135deg, #8a9d84, #677d63);
         }
         
         .genre-badge {
@@ -464,77 +531,6 @@
             background: linear-gradient(135deg, #f5f1e8, #e8f0e8);
             transform: translateY(-2px);
         }
-
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid rgba(159, 179, 153, 0.2);
-        }
-
-        .tab {
-            background: transparent;
-            color: #8a9d84;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 0;
-            cursor: pointer;
-            font-size: 1.1em;
-            font-weight: 500;
-            transition: all 0.3s;
-            border-bottom: 3px solid transparent;
-            box-shadow: none;
-        }
-
-        .tab:hover {
-            color: #677d63;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .tab.active {
-            color: #677d63;
-            border-bottom-color: #9fb399;
-            font-weight: 600;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .purchased {
-            opacity: 0.6;
-            position: relative;
-        }
-
-        .purchased::before {
-            content: '✓ Acheté';
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #9fb399;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.85em;
-            font-weight: 600;
-            z-index: 1;
-        }
-
-        .btn-toggle-purchased {
-            background: linear-gradient(135deg, #9fb399, #8a9d84);
-            font-size: 14px;
-            padding: 10px 20px;
-            border-radius: 20px;
-        }
-
-        .btn-toggle-purchased:hover {
-            background: linear-gradient(135deg, #8a9d84, #677d63);
-        }
         
         @media (max-width: 768px) {
             .container {
@@ -552,6 +548,10 @@
             .user-header {
                 flex-direction: column;
                 gap: 15px;
+            }
+
+            .tabs {
+                flex-direction: column;
             }
         }
     </style>
@@ -611,11 +611,13 @@
         <h1>🌿 Ma Bibliothèque Enchantée 🌿</h1>
         <div class="floral-divider">✿ ❀ ✿</div>
 
+        <!-- TABS -->
         <div class="tabs">
             <button class="tab active" onclick="switchTab('library')">📚 Ma Bibliothèque</button>
             <button class="tab" onclick="switchTab('wishlist')">⭐ Wishlist</button>
         </div>
-        
+
+        <!-- LIBRARY TAB -->
         <div id="libraryTab" class="tab-content active">
             <div class="stats">
                 <span id="bookCount">Chargement...</span>
@@ -623,95 +625,150 @@
                     🌾 Exporter en Excel
                 </button>
             </div>
-        
-        <div class="form-section">
-            <h2>✿ Ajouter un livre ✿</h2>
-            <form id="bookForm">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="title">🌱 Titre *</label>
-                        <input type="text" id="title" required>
+            
+            <div class="form-section">
+                <h2>✿ Ajouter un livre ✿</h2>
+                <form id="bookForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="title">🌱 Titre *</label>
+                            <input type="text" id="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="author">🍃 Auteur *</label>
+                            <input type="text" id="author" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="year">🌾 Année</label>
+                            <input type="number" id="year" min="1000" max="2025">
+                        </div>
+                        <div class="form-group">
+                            <label for="genre">🌿 Genre</label>
+                            <select id="genre">
+                                <option value="">Sélectionner...</option>
+                                <option value="Romance Contemporaine">Romance Contemporaine</option>
+                                <option value="Romance Historique">Romance Historique</option>
+                                <option value="Dark Romance">Dark Romance</option>
+                                <option value="Romantasy">Romantasy</option>
+                                <option value="Fantasy">Fantasy</option>
+                                <option value="Urban Fantasy">Urban Fantasy</option>
+                                <option value="Paranormal Romance">Paranormal Romance</option>
+                                <option value="New Adult">New Adult</option>
+                                <option value="Young Adult">Young Adult</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="tropes">🌸 Tropes</label>
+                            <select id="tropes">
+                                <option value="">Sélectionner...</option>
+                                <option value="Enemies to Lovers">Enemies to Lovers</option>
+                                <option value="Friends to Lovers">Friends to Lovers</option>
+                                <option value="Fated Mates">Fated Mates</option>
+                                <option value="Slow Burn">Slow Burn</option>
+                                <option value="Second Chance">Second Chance</option>
+                                <option value="Forced Proximity">Forced Proximity</option>
+                                <option value="Touch Her and Die">Touch Her and Die</option>
+                                <option value="Grumpy x Sunshine">Grumpy x Sunshine</option>
+                                <option value="Forbidden Love">Forbidden Love</option>
+                                <option value="Fake Relationship">Fake Relationship</option>
+                                <option value="One Bed">One Bed</option>
+                                <option value="Bodyguard Romance">Bodyguard Romance</option>
+                                <option value="Childhood Friends">Childhood Friends</option>
+                                <option value="Love Triangle">Love Triangle</option>
+                                <option value="Alpha Male">Alpha Male</option>
+                                <option value="Found Family">Found Family</option>
+                                <option value="Revenge">Revenge</option>
+                                <option value="Magic School">Magic School</option>
+                                <option value="Chosen One">Chosen One</option>
+                                <option value="Morally Grey">Morally Grey</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="author">🍃 Auteur *</label>
-                        <input type="text" id="author" required>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="notes">🌼 Notes personnelles</label>
+                        <textarea id="notes" placeholder="Vos impressions, remarques..."></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="year">🌾 Année</label>
-                        <input type="number" id="year" min="1000" max="2025">
-                    </div>
-                    <div class="form-group">
-                        <label for="genre">🌿 Genre</label>
-                        <select id="genre">
-                            <option value="">Sélectionner...</option>
-                            <option value="Romance Contemporaine">Romance Contemporaine</option>
-                            <option value="Romance Historique">Romance Historique</option>
-                            <option value="Dark Romance">Dark Romance</option>
-                            <option value="Romantasy">Romantasy</option>
-                            <option value="Fantasy">Fantasy</option>
-                            <option value="Urban Fantasy">Urban Fantasy</option>
-                            <option value="Paranormal Romance">Paranormal Romance</option>
-                            <option value="New Adult">New Adult</option>
-                            <option value="Young Adult">Young Adult</option>
-                            <option value="Autre">Autre</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="tropes">🌸 Tropes</label>
-                        <select id="tropes">
-                            <option value="">Sélectionner...</option>
-                            <option value="Enemies to Lovers">Enemies to Lovers</option>
-                            <option value="Friends to Lovers">Friends to Lovers</option>
-                            <option value="Fated Mates">Fated Mates</option>
-                            <option value="Slow Burn">Slow Burn</option>
-                            <option value="Second Chance">Second Chance</option>
-                            <option value="Forced Proximity">Forced Proximity</option>
-                            <option value="Touch Her and Die">Touch Her and Die</option>
-                            <option value="Grumpy x Sunshine">Grumpy x Sunshine</option>
-                            <option value="Forbidden Love">Forbidden Love</option>
-                            <option value="Fake Relationship">Fake Relationship</option>
-                            <option value="One Bed">One Bed</option>
-                            <option value="Bodyguard Romance">Bodyguard Romance</option>
-                            <option value="Childhood Friends">Childhood Friends</option>
-                            <option value="Love Triangle">Love Triangle</option>
-                            <option value="Alpha Male">Alpha Male</option>
-                            <option value="Found Family">Found Family</option>
-                            <option value="Revenge">Revenge</option>
-                            <option value="Magic School">Magic School</option>
-                            <option value="Chosen One">Chosen One</option>
-                            <option value="Morally Grey">Morally Grey</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label for="notes">🌼 Notes personnelles</label>
-                    <textarea id="notes" placeholder="Vos impressions, remarques..."></textarea>
-                </div>
-                <button type="submit">Ajouter à ma bibliothèque ✨</button>
-            </form>
+                    <button type="submit">Ajouter à ma bibliothèque ✨</button>
+                </form>
+            </div>
+            
+            <div class="floral-divider">❀ ✿ ❀</div>
+            
+            <div class="search-filter">
+                <input type="text" id="searchInput" placeholder="🔍 Rechercher par titre ou auteur...">
+                <select id="filterGenre">
+                    <option value="">Tous les genres</option>
+                    <option value="Romance Contemporaine">Romance Contemporaine</option>
+                    <option value="Romance Historique">Romance Historique</option>
+                    <option value="Dark Romance">Dark Romance</option>
+                    <option value="Romantasy">Romantasy</option>
+                    <option value="Fantasy">Fantasy</option>
+                    <option value="Urban Fantasy">Urban Fantasy</option>
+                    <option value="Paranormal Romance">Paranormal Romance</option>
+                    <option value="New Adult">New Adult</option>
+                    <option value="Young Adult">Young Adult</option>
+                    <option value="Autre">Autre</option>
+                </select>
+            </div>
+            
+            <div id="booksContainer" class="books-grid">
+                <div class="loading">✨ Chargement de votre bibliothèque enchantée... ✨</div>
+            </div>
         </div>
-        
-        <div class="floral-divider">❀ ✿ ❀</div>
-        
-        <div class="search-filter">
-            <input type="text" id="searchInput" placeholder="🔍 Rechercher par titre ou auteur...">
-            <select id="filterGenre">
-                <option value="">Tous les genres</option>
-                <option value="Romance Contemporaine">Romance Contemporaine</option>
-                <option value="Romance Historique">Romance Historique</option>
-                <option value="Dark Romance">Dark Romance</option>
-                <option value="Romantasy">Romantasy</option>
-                <option value="Fantasy">Fantasy</option>
-                <option value="Urban Fantasy">Urban Fantasy</option>
-                <option value="Paranormal Romance">Paranormal Romance</option>
-                <option value="New Adult">New Adult</option>
-                <option value="Young Adult">Young Adult</option>
-                <option value="Autre">Autre</option>
-            </select>
-        </div>
-        
-        <div id="booksContainer" class="books-grid">
-            <div class="loading">✨ Chargement de votre bibliothèque enchantée... ✨</div>
+
+        <!-- WISHLIST TAB -->
+        <div id="wishlistTab" class="tab-content">
+            <div class="stats">
+                <span id="wishlistCount">Chargement...</span>
+                <button onclick="exportToExcel('wishlist')" class="btn-export">
+                    🌾 Exporter en Excel
+                </button>
+            </div>
+
+            <div class="form-section">
+                <h2>⭐ Ajouter à ma Wishlist ⭐</h2>
+                <form id="wishlistForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="wishTitle">🌱 Titre *</label>
+                            <input type="text" id="wishTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="wishAuthor">🍃 Auteur *</label>
+                            <input type="text" id="wishAuthor" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="wishReleaseDate">📅 Date de sortie</label>
+                            <input type="date" id="wishReleaseDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="wishPrice">💰 Prix</label>
+                            <input type="text" id="wishPrice" placeholder="Ex: 15.99€">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="wishNotes">🌼 Notes</label>
+                        <textarea id="wishNotes" placeholder="Pourquoi ce livre vous intéresse..."></textarea>
+                    </div>
+                    <button type="submit">Ajouter à ma Wishlist ✨</button>
+                </form>
+            </div>
+
+            <div class="floral-divider">❀ ✿ ❀</div>
+
+            <div class="search-filter">
+                <input type="text" id="searchWishlist" placeholder="🔍 Rechercher par titre ou auteur...">
+                <select id="filterPurchased">
+                    <option value="">Tous</option>
+                    <option value="not-purchased">Non achetés</option>
+                    <option value="purchased">Achetés</option>
+                </select>
+            </div>
+
+            <div id="wishlistContainer" class="books-grid">
+                <div class="loading">✨ Chargement de votre wishlist... ✨</div>
+            </div>
         </div>
     </div>
 
@@ -740,7 +797,6 @@
         let unsubscribe = null;
         let unsubscribeWishlist = null;
         let currentUser = null;
-        let currentTab = 'library';
 
         // AUTH FUNCTIONS
         function showError(message) {
@@ -760,7 +816,6 @@
             document.getElementById('appContainer').classList.add('hidden');
         }
 
-        // Toggle between login and register
         document.getElementById('showRegister').addEventListener('click', (e) => {
             e.preventDefault();
             document.getElementById('loginForm').classList.add('hidden');
@@ -775,7 +830,6 @@
             document.getElementById('errorMessage').classList.add('hidden');
         });
 
-        // Register
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('registerName').value;
@@ -785,8 +839,6 @@
             try {
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 await userCredential.user.updateProfile({ displayName: name });
-                
-                // Create user document in Firestore
                 await db.collection('users').doc(userCredential.user.uid).set({
                     name: name,
                     email: email,
@@ -806,7 +858,6 @@
             }
         });
 
-        // Login
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
@@ -828,7 +879,6 @@
             }
         });
 
-        // Logout
         document.getElementById('logoutBtn').addEventListener('click', async () => {
             try {
                 if (unsubscribe) unsubscribe();
@@ -840,7 +890,6 @@
             }
         });
 
-        // Auth state observer
         auth.onAuthStateChanged((user) => {
             if (user) {
                 currentUser = user;
@@ -858,7 +907,21 @@
             }
         });
 
-        // BOOKS FUNCTIONS
+        // TAB SWITCHING
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'library') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('libraryTab').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('wishlistTab').classList.add('active');
+            }
+        }
+
+        // LIBRARY FUNCTIONS
         function loadBooks() {
             if (!currentUser) return;
 
@@ -883,7 +946,6 @@
         
         async function addBook(e) {
             e.preventDefault();
-            
             if (!currentUser) return;
             
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -975,59 +1037,6 @@
                 </div>
             `).join('');
         }
-        
-        function exportToExcel() {
-            if (books.length === 0) {
-                alert('Aucun livre à exporter ! 🌿');
-                return;
-            }
-            
-            const exportData = books.map(book => ({
-                'Titre': book.title,
-                'Auteur': book.author,
-                'Année': book.year || '',
-                'Genre': book.genre || '',
-                'Tropes': book.tropes || '',
-                'Notes': book.notes || ''
-            }));
-            
-            const ws = XLSX.utils.json_to_sheet(exportData);
-            
-            const colWidths = [
-                { wch: 30 },
-                { wch: 25 },
-                { wch: 10 },
-                { wch: 20 },
-                { wch: 30 },
-                { wch: 40 }
-            ];
-            ws['!cols'] = colWidths;
-            
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Ma Bibliothèque');
-            
-            const date = new Date().toISOString().split('T')[0];
-            XLSX.writeFile(wb, `Ma_Bibliotheque_${date}.xlsx`);
-        }
-
-        // TAB SWITCHING
-        function switchTab(tab) {
-            currentTab = tab;
-            
-            // Update tab buttons
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            // Update content
-            document.getElementById('libraryTab').classList.remove('active');
-            document.getElementById('wishlistTab').classList.remove('active');
-            
-            if (tab === 'library') {
-                document.getElementById('libraryTab').classList.add('active');
-            } else {
-                document.getElementById('wishlistTab').classList.add('active');
-            }
-        }
 
         // WISHLIST FUNCTIONS
         function loadWishlist() {
@@ -1054,7 +1063,6 @@
 
         async function addToWishlist(e) {
             e.preventDefault();
-            
             if (!currentUser) return;
             
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -1158,12 +1166,55 @@
                     ${item.notes ? `<div class="book-notes">💭 ${item.notes}</div>` : ''}
                     <div class="book-actions">
                         <button class="btn-toggle-purchased" onclick="togglePurchased('${item.id}', ${item.purchased})">
-                            ${item.purchased ? '↩️ Marquer non acheté' : '✓ Marquer acheté'}
+                            ${item.purchased ? '↩️ Non acheté' : '✓ Acheté'}
                         </button>
                         <button class="btn-delete" onclick="deleteWishlistItem('${item.id}')">Supprimer 🍂</button>
                     </div>
                 </div>
             `).join('');
+        }
+
+        function exportToExcel(type) {
+            const data = type === 'library' ? books : wishlist;
+            
+            if (data.length === 0) {
+                alert('Aucune donnée à exporter ! 🌿');
+                return;
+            }
+            
+            let exportData;
+            if (type === 'library') {
+                exportData = data.map(book => ({
+                    'Titre': book.title,
+                    'Auteur': book.author,
+                    'Année': book.year || '',
+                    'Genre': book.genre || '',
+                    'Tropes': book.tropes || '',
+                    'Notes': book.notes || ''
+                }));
+            } else {
+                exportData = data.map(item => ({
+                    'Titre': item.title,
+                    'Auteur': item.author,
+                    'Date de sortie': item.releaseDate || '',
+                    'Prix': item.price || '',
+                    'Acheté': item.purchased ? 'Oui' : 'Non',
+                    'Notes': item.notes || ''
+                }));
+            }
+            
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const colWidths = type === 'library' 
+                ? [{ wch: 30 }, { wch: 25 }, { wch: 10 }, { wch: 20 }, { wch: 30 }, { wch: 40 }]
+                : [{ wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 40 }];
+            ws['!cols'] = colWidths;
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, type === 'library' ? 'Ma Bibliothèque' : 'Ma Wishlist');
+            
+            const date = new Date().toISOString().split('T')[0];
+            const filename = type === 'library' ? `Ma_Bibliotheque_${date}.xlsx` : `Ma_Wishlist_${date}.xlsx`;
+            XLSX.writeFile(wb, filename);
         }
         
         document.getElementById('bookForm').addEventListener('submit', addBook);
