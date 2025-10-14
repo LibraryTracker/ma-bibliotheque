@@ -464,6 +464,77 @@
             background: linear-gradient(135deg, #f5f1e8, #e8f0e8);
             transform: translateY(-2px);
         }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid rgba(159, 179, 153, 0.2);
+        }
+
+        .tab {
+            background: transparent;
+            color: #8a9d84;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 0;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            box-shadow: none;
+        }
+
+        .tab:hover {
+            color: #677d63;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .tab.active {
+            color: #677d63;
+            border-bottom-color: #9fb399;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .purchased {
+            opacity: 0.6;
+            position: relative;
+        }
+
+        .purchased::before {
+            content: '✓ Acheté';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #9fb399;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+            z-index: 1;
+        }
+
+        .btn-toggle-purchased {
+            background: linear-gradient(135deg, #9fb399, #8a9d84);
+            font-size: 14px;
+            padding: 10px 20px;
+            border-radius: 20px;
+        }
+
+        .btn-toggle-purchased:hover {
+            background: linear-gradient(135deg, #8a9d84, #677d63);
+        }
         
         @media (max-width: 768px) {
             .container {
