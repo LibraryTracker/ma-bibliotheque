@@ -61,6 +61,131 @@
             z-index: -1;
             opacity: 0.5;
         }
+
+        /* AUTH STYLES */
+        .auth-container {
+            max-width: 450px;
+            margin: 80px auto;
+        }
+
+        .auth-box {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(245, 241, 232, 0.97));
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid rgba(159, 179, 153, 0.25);
+            box-shadow: 0 8px 30px rgba(159, 179, 153, 0.15);
+        }
+
+        .auth-title {
+            text-align: center;
+            color: #677d63;
+            font-size: 2em;
+            margin-bottom: 30px;
+            font-family: 'Brush Script MT', cursive;
+        }
+
+        .auth-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .auth-form input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #d4ddd4;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: 'Georgia', serif;
+            transition: all 0.3s;
+        }
+
+        .auth-form input:focus {
+            outline: none;
+            border-color: #9fb399;
+            box-shadow: 0 0 15px rgba(159, 179, 153, 0.2);
+        }
+
+        .auth-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #9fb399, #8a9d84);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Georgia', serif;
+            margin-top: 10px;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(159, 179, 153, 0.35);
+        }
+
+        .auth-toggle {
+            text-align: center;
+            margin-top: 20px;
+            color: #7a8d76;
+        }
+
+        .auth-toggle a {
+            color: #677d63;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .auth-toggle a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: #ffebe9;
+            color: #c63d2f;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ffc6c0;
+            font-size: 14px;
+        }
+
+        .user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, rgba(159, 179, 153, 0.15), rgba(188, 170, 152, 0.15));
+            border-radius: 15px;
+            border: 2px solid rgba(159, 179, 153, 0.2);
+        }
+
+        .user-info {
+            color: #5a6d56;
+            font-size: 1.1em;
+        }
+
+        .btn-logout {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(245, 241, 232, 0.95));
+            color: #677d63;
+            padding: 10px 25px;
+            font-size: 0.95em;
+            border: 2px solid #9fb399;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-logout:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(159, 179, 153, 0.25);
+        }
+
+        .hidden {
+            display: none !important;
+        }
         
         h1 {
             background: linear-gradient(135deg, #677d63, #9fb399, #677d63);
@@ -352,11 +477,66 @@
             .books-grid {
                 grid-template-columns: 1fr;
             }
+
+            .user-header {
+                flex-direction: column;
+                gap: 15px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Auth Container -->
+    <div id="authContainer" class="auth-container">
+        <div class="auth-box">
+            <h1 class="auth-title">🌿 Ma Bibliothèque 🌿</h1>
+            
+            <div id="errorMessage" class="error-message hidden"></div>
+            
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <input type="email" id="loginEmail" placeholder="📧 Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="loginPassword" placeholder="🔒 Mot de passe" required>
+                </div>
+                <button type="submit" class="auth-btn">Se connecter</button>
+                <div class="auth-toggle">
+                    <span>Pas encore de compte ? </span>
+                    <a id="showRegister">Créer un compte</a>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="auth-form hidden">
+                <div class="form-group">
+                    <input type="text" id="registerName" placeholder="👤 Nom" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="registerEmail" placeholder="📧 Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="registerPassword" placeholder="🔒 Mot de passe (min. 6 caractères)" required minlength="6">
+                </div>
+                <button type="submit" class="auth-btn">Créer mon compte</button>
+                <div class="auth-toggle">
+                    <span>Déjà un compte ? </span>
+                    <a id="showLogin">Se connecter</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="appContainer" class="container hidden">
+        <div class="user-header">
+            <div class="user-info">
+                <span>👤 Bienvenue, <strong id="userName"></strong></span>
+            </div>
+            <button id="logoutBtn" class="btn-logout">🚪 Déconnexion</button>
+        </div>
+
         <h1>🌿 Ma Bibliothèque Enchantée 🌿</h1>
         <div class="floral-divider">✿ ❀ ✿</div>
         
@@ -459,6 +639,7 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
@@ -474,13 +655,131 @@
         };
 
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const db = firebase.firestore();
-        const booksCollection = db.collection('books');
         
         let books = [];
         let unsubscribe = null;
-        
+        let currentUser = null;
+
+        // AUTH FUNCTIONS
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+            setTimeout(() => errorDiv.classList.add('hidden'), 5000);
+        }
+
+        function showApp() {
+            document.getElementById('authContainer').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+        }
+
+        function showAuth() {
+            document.getElementById('authContainer').classList.remove('hidden');
+            document.getElementById('appContainer').classList.add('hidden');
+        }
+
+        // Toggle between login and register
+        document.getElementById('showRegister').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+        });
+
+        document.getElementById('showLogin').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+        });
+
+        // Register
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                await userCredential.user.updateProfile({ displayName: name });
+                
+                // Create user document in Firestore
+                await db.collection('users').doc(userCredential.user.uid).set({
+                    name: name,
+                    email: email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (error) {
+                console.error('Registration error:', error);
+                let message = 'Erreur lors de la création du compte';
+                if (error.code === 'auth/email-already-in-use') {
+                    message = 'Cette adresse email est déjà utilisée';
+                } else if (error.code === 'auth/weak-password') {
+                    message = 'Le mot de passe doit contenir au moins 6 caractères';
+                } else if (error.code === 'auth/invalid-email') {
+                    message = 'Adresse email invalide';
+                }
+                showError(message);
+            }
+        });
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (error) {
+                console.error('Login error:', error);
+                let message = 'Erreur de connexion';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    message = 'Email ou mot de passe incorrect';
+                } else if (error.code === 'auth/invalid-email') {
+                    message = 'Adresse email invalide';
+                } else if (error.code === 'auth/too-many-requests') {
+                    message = 'Trop de tentatives. Réessayez plus tard';
+                }
+                showError(message);
+            }
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                if (unsubscribe) unsubscribe();
+                await auth.signOut();
+            } catch (error) {
+                console.error('Logout error:', error);
+                showError('Erreur lors de la déconnexion');
+            }
+        });
+
+        // Auth state observer
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('userName').textContent = user.displayName || user.email;
+                showApp();
+                loadBooks();
+            } else {
+                currentUser = null;
+                showAuth();
+                if (unsubscribe) unsubscribe();
+                books = [];
+            }
+        });
+
+        // BOOKS FUNCTIONS
         function loadBooks() {
+            if (!currentUser) return;
+
+            const booksCollection = db.collection('users').doc(currentUser.uid).collection('books');
+            
             unsubscribe = booksCollection.orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
                 books = [];
                 snapshot.forEach((doc) => {
@@ -501,11 +800,14 @@
         async function addBook(e) {
             e.preventDefault();
             
+            if (!currentUser) return;
+            
             const submitBtn = e.target.querySelector('button[type="submit"]');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Ajout en cours... ✨';
             
             try {
+                const booksCollection = db.collection('users').doc(currentUser.uid).collection('books');
                 await booksCollection.add({
                     title: document.getElementById('title').value,
                     author: document.getElementById('author').value,
@@ -527,8 +829,11 @@
         }
         
         async function deleteBook(id) {
+            if (!currentUser) return;
+            
             if (confirm('Êtes-vous sûr de vouloir supprimer ce livre ? 🍂')) {
                 try {
+                    const booksCollection = db.collection('users').doc(currentUser.uid).collection('books');
                     await booksCollection.doc(id).delete();
                 } catch (error) {
                     console.error("Erreur lors de la suppression:", error);
@@ -624,8 +929,6 @@
         document.getElementById('bookForm').addEventListener('submit', addBook);
         document.getElementById('searchInput').addEventListener('input', displayBooks);
         document.getElementById('filterGenre').addEventListener('change', displayBooks);
-        
-        loadBooks();
         
         window.addEventListener('beforeunload', () => {
             if (unsubscribe) unsubscribe();
