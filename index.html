@@ -610,13 +610,19 @@
 
         <h1>🌿 Ma Bibliothèque Enchantée 🌿</h1>
         <div class="floral-divider">✿ ❀ ✿</div>
-        
-        <div class="stats">
-            <span id="bookCount">Chargement...</span>
-            <button onclick="exportToExcel()" class="btn-export">
-                🌾 Exporter en Excel
-            </button>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('library')">📚 Ma Bibliothèque</button>
+            <button class="tab" onclick="switchTab('wishlist')">⭐ Wishlist</button>
         </div>
+        
+        <div id="libraryTab" class="tab-content active">
+            <div class="stats">
+                <span id="bookCount">Chargement...</span>
+                <button onclick="exportToExcel('library')" class="btn-export">
+                    🌾 Exporter en Excel
+                </button>
+            </div>
         
         <div class="form-section">
             <h2>✿ Ajouter un livre ✿</h2>
@@ -730,8 +736,11 @@
         const db = firebase.firestore();
         
         let books = [];
+        let wishlist = [];
         let unsubscribe = null;
+        let unsubscribeWishlist = null;
         let currentUser = null;
+        let currentTab = 'library';
 
         // AUTH FUNCTIONS
         function showError(message) {
@@ -823,6 +832,7 @@
         document.getElementById('logoutBtn').addEventListener('click', async () => {
             try {
                 if (unsubscribe) unsubscribe();
+                if (unsubscribeWishlist) unsubscribeWishlist();
                 await auth.signOut();
             } catch (error) {
                 console.error('Logout error:', error);
@@ -837,11 +847,14 @@
                 document.getElementById('userName').textContent = user.displayName || user.email;
                 showApp();
                 loadBooks();
+                loadWishlist();
             } else {
                 currentUser = null;
                 showAuth();
                 if (unsubscribe) unsubscribe();
+                if (unsubscribeWishlist) unsubscribeWishlist();
                 books = [];
+                wishlist = [];
             }
         });
 
@@ -996,13 +1009,173 @@
             const date = new Date().toISOString().split('T')[0];
             XLSX.writeFile(wb, `Ma_Bibliotheque_${date}.xlsx`);
         }
+
+        // TAB SWITCHING
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update content
+            document.getElementById('libraryTab').classList.remove('active');
+            document.getElementById('wishlistTab').classList.remove('active');
+            
+            if (tab === 'library') {
+                document.getElementById('libraryTab').classList.add('active');
+            } else {
+                document.getElementById('wishlistTab').classList.add('active');
+            }
+        }
+
+        // WISHLIST FUNCTIONS
+        function loadWishlist() {
+            if (!currentUser) return;
+
+            const wishlistCollection = db.collection('users').doc(currentUser.uid).collection('wishlist');
+            
+            unsubscribeWishlist = wishlistCollection.orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+                wishlist = [];
+                snapshot.forEach((doc) => {
+                    wishlist.push({ id: doc.id, ...doc.data() });
+                });
+                displayWishlist();
+            }, (error) => {
+                console.error("Erreur lors du chargement wishlist:", error);
+                document.getElementById('wishlistContainer').innerHTML = `
+                    <div class="empty-state">
+                        <h3>❌ Erreur de connexion</h3>
+                        <p>Vérifiez votre configuration Firebase</p>
+                    </div>
+                `;
+            });
+        }
+
+        async function addToWishlist(e) {
+            e.preventDefault();
+            
+            if (!currentUser) return;
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Ajout en cours... ✨';
+            
+            try {
+                const wishlistCollection = db.collection('users').doc(currentUser.uid).collection('wishlist');
+                await wishlistCollection.add({
+                    title: document.getElementById('wishTitle').value,
+                    author: document.getElementById('wishAuthor').value,
+                    releaseDate: document.getElementById('wishReleaseDate').value,
+                    price: document.getElementById('wishPrice').value,
+                    notes: document.getElementById('wishNotes').value,
+                    purchased: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                document.getElementById('wishlistForm').reset();
+            } catch (error) {
+                console.error("Erreur lors de l'ajout:", error);
+                alert("Erreur lors de l'ajout à la wishlist");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Ajouter à ma Wishlist ✨';
+            }
+        }
+
+        async function togglePurchased(id, currentStatus) {
+            if (!currentUser) return;
+            
+            try {
+                const wishlistCollection = db.collection('users').doc(currentUser.uid).collection('wishlist');
+                await wishlistCollection.doc(id).update({
+                    purchased: !currentStatus
+                });
+            } catch (error) {
+                console.error("Erreur lors de la mise à jour:", error);
+                alert("Erreur lors de la mise à jour du statut");
+            }
+        }
+
+        async function deleteWishlistItem(id) {
+            if (!currentUser) return;
+            
+            if (confirm('Êtes-vous sûr de vouloir supprimer cet élément ? 🍂')) {
+                try {
+                    const wishlistCollection = db.collection('users').doc(currentUser.uid).collection('wishlist');
+                    await wishlistCollection.doc(id).delete();
+                } catch (error) {
+                    console.error("Erreur lors de la suppression:", error);
+                    alert("Erreur lors de la suppression");
+                }
+            }
+        }
+
+        function displayWishlist() {
+            const container = document.getElementById('wishlistContainer');
+            const searchTerm = document.getElementById('searchWishlist').value.toLowerCase();
+            const filterPurchased = document.getElementById('filterPurchased').value;
+            
+            let filteredWishlist = wishlist.filter(item => {
+                const matchesSearch = item.title.toLowerCase().includes(searchTerm) || 
+                                     item.author.toLowerCase().includes(searchTerm);
+                const matchesPurchased = !filterPurchased || 
+                    (filterPurchased === 'purchased' && item.purchased) ||
+                    (filterPurchased === 'not-purchased' && !item.purchased);
+                return matchesSearch && matchesPurchased;
+            });
+            
+            const notPurchasedCount = wishlist.filter(item => !item.purchased).length;
+            document.getElementById('wishlistCount').textContent = 
+                `⭐ ${wishlist.length} livre(s) dans votre wishlist (${notPurchasedCount} non acheté(s)) ⭐`;
+            
+            if (filteredWishlist.length === 0 && wishlist.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>⭐ Aucun livre ⭐</h3>
+                        <p>Commencez par ajouter des livres à votre wishlist !</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            if (filteredWishlist.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>🔍 Aucun résultat</h3>
+                        <p>Aucun livre ne correspond à votre recherche</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredWishlist.map(item => `
+                <div class="book-card ${item.purchased ? 'purchased' : ''}">
+                    <div class="book-title">${item.title}</div>
+                    <div class="book-author">par ${item.author}</div>
+                    ${item.releaseDate ? `<div class="book-info">📅 Sortie: ${new Date(item.releaseDate).toLocaleDateString('fr-FR')}</div>` : ''}
+                    ${item.price ? `<div class="book-info">💰 Prix: ${item.price}</div>` : ''}
+                    ${item.notes ? `<div class="book-notes">💭 ${item.notes}</div>` : ''}
+                    <div class="book-actions">
+                        <button class="btn-toggle-purchased" onclick="togglePurchased('${item.id}', ${item.purchased})">
+                            ${item.purchased ? '↩️ Marquer non acheté' : '✓ Marquer acheté'}
+                        </button>
+                        <button class="btn-delete" onclick="deleteWishlistItem('${item.id}')">Supprimer 🍂</button>
+                    </div>
+                </div>
+            `).join('');
+        }
         
         document.getElementById('bookForm').addEventListener('submit', addBook);
+        document.getElementById('wishlistForm').addEventListener('submit', addToWishlist);
         document.getElementById('searchInput').addEventListener('input', displayBooks);
         document.getElementById('filterGenre').addEventListener('change', displayBooks);
+        document.getElementById('searchWishlist').addEventListener('input', displayWishlist);
+        document.getElementById('filterPurchased').addEventListener('change', displayWishlist);
         
         window.addEventListener('beforeunload', () => {
             if (unsubscribe) unsubscribe();
+            if (unsubscribeWishlist) unsubscribeWishlist();
         });
     </script>
 </body>
