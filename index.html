@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma Bibliothèque Personnelle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .stats {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .form-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input, select, textarea {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .search-filter {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .search-filter input,
+        .search-filter select {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .book-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+        
+        .book-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .book-author {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+        
+        .book-info {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .book-notes {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #555;
+        }
+        
+        .book-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-delete {
+            background: #e74c3c;
+            font-size: 14px;
+            padding: 8px 15px;
+        }
+        
+        .btn-delete:hover {
+            background: #c0392b;
+        }
+        
+        .genre-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Ma Bibliothèque Personnelle</h1>
+        
+        <div class="stats">
+            <span id="bookCount">0 livre(s) dans votre bibliothèque</span>
+            <button onclick="exportToExcel()" style="margin-left: 20px; background: white; color: #667eea; padding: 8px 20px; font-size: 0.9em;">
+                📥 Exporter en Excel
+            </button>
+        </div>
+        
+        <div class="form-section">
+            <h2>➕ Ajouter un livre</h2>
+            <form id="bookForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="title">Titre *</label>
+                        <input type="text" id="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="author">Auteur *</label>
+                        <input type="text" id="author" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="year">Année</label>
+                        <input type="number" id="year" min="1000" max="2025">
+                    </div>
+                    <div class="form-group">
+                        <label for="genre">Genre</label>
+                        <select id="genre">
+                            <option value="">Sélectionner...</option>
+                            <option value="Romance Contemporaine">Romance Contemporaine</option>
+                            <option value="Romance Historique">Romance Historique</option>
+                            <option value="Dark Romance">Dark Romance</option>
+                            <option value="Romantasy">Romantasy</option>
+                            <option value="Fantasy">Fantasy</option>
+                            <option value="Urban Fantasy">Urban Fantasy</option>
+                            <option value="Paranormal Romance">Paranormal Romance</option>
+                            <option value="New Adult">New Adult</option>
+                            <option value="Young Adult">Young Adult</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="tropes">Tropes</label>
+                        <select id="tropes">
+                            <option value="">Sélectionner...</option>
+                            <option value="Enemies to Lovers">Enemies to Lovers</option>
+                            <option value="Friends to Lovers">Friends to Lovers</option>
+                            <option value="Fated Mates">Fated Mates</option>
+                            <option value="Slow Burn">Slow Burn</option>
+                            <option value="Second Chance">Second Chance</option>
+                            <option value="Forced Proximity">Forced Proximity</option>
+                            <option value="Touch Her and Die">Touch Her and Die</option>
+                            <option value="Grumpy x Sunshine">Grumpy x Sunshine</option>
+                            <option value="Forbidden Love">Forbidden Love</option>
+                            <option value="Fake Relationship">Fake Relationship</option>
+                            <option value="One Bed">One Bed</option>
+                            <option value="Bodyguard Romance">Bodyguard Romance</option>
+                            <option value="Childhood Friends">Childhood Friends</option>
+                            <option value="Love Triangle">Love Triangle</option>
+                            <option value="Alpha Male">Alpha Male</option>
+                            <option value="Found Family">Found Family</option>
+                            <option value="Revenge">Revenge</option>
+                            <option value="Magic School">Magic School</option>
+                            <option value="Chosen One">Chosen One</option>
+                            <option value="Morally Grey">Morally Grey</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="notes">Notes personnelles</label>
+                    <textarea id="notes" placeholder="Vos impressions, remarques..."></textarea>
+                </div>
+                <button type="submit">Ajouter à ma bibliothèque</button>
+            </form>
+        </div>
+        
+        <div class="search-filter">
+            <input type="text" id="searchInput" placeholder="🔍 Rechercher par titre ou auteur...">
+            <select id="filterGenre">
+                <option value="">Tous les genres</option>
+                <option value="Romance Contemporaine">Romance Contemporaine</option>
+                <option value="Romance Historique">Romance Historique</option>
+                <option value="Dark Romance">Dark Romance</option>
+                <option value="Romantasy">Romantasy</option>
+                <option value="Fantasy">Fantasy</option>
+                <option value="Urban Fantasy">Urban Fantasy</option>
+                <option value="Paranormal Romance">Paranormal Romance</option>
+                <option value="New Adult">New Adult</option>
+                <option value="Young Adult">Young Adult</option>
+                <option value="Autre">Autre</option>
+            </select>
+        </div>
+        
+        <div id="booksContainer" class="books-grid"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        let books = [];
+        
+        function loadBooks() {
+            const saved = localStorage.getItem('myLibrary');
+            if (saved) {
+                books = JSON.parse(saved);
+            }
+            displayBooks();
+        }
+        
+        function saveBooks() {
+            localStorage.setItem('myLibrary', JSON.stringify(books));
+        }
+        
+        function exportToExcel() {
+            if (books.length === 0) {
+                alert('Aucun livre à exporter !');
+                return;
+            }
+            
+            const exportData = books.map(book => ({
+                'Titre': book.title,
+                'Auteur': book.author,
+                'Année': book.year || '',
+                'Genre': book.genre || '',
+                'Tropes': book.tropes || '',
+                'Notes': book.notes || ''
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            const colWidths = [
+                { wch: 30 },
+                { wch: 25 },
+                { wch: 10 },
+                { wch: 20 },
+                { wch: 30 },
+                { wch: 40 }
+            ];
+            ws['!cols'] = colWidths;
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Ma Bibliothèque');
+            
+            const date = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `Ma_Bibliotheque_${date}.xlsx`);
+        }
+        
+        function addBook(e) {
+            e.preventDefault();
+            
+            const book = {
+                id: Date.now(),
+                title: document.getElementById('title').value,
+                author: document.getElementById('author').value,
+                year: document.getElementById('year').value,
+                genre: document.getElementById('genre').value,
+                tropes: document.getElementById('tropes').value,
+                notes: document.getElementById('notes').value
+            };
+            
+            books.push(book);
+            saveBooks();
+            displayBooks();
+            document.getElementById('bookForm').reset();
+        }
+        
+        function deleteBook(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce livre ?')) {
+                books = books.filter(book => book.id !== id);
+                saveBooks();
+                displayBooks();
+            }
+        }
+        
+        function displayBooks() {
+            const container = document.getElementById('booksContainer');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filterGenre = document.getElementById('filterGenre').value;
+            
+            let filteredBooks = books.filter(book => {
+                const matchesSearch = book.title.toLowerCase().includes(searchTerm) || 
+                                     book.author.toLowerCase().includes(searchTerm);
+                const matchesGenre = !filterGenre || book.genre === filterGenre;
+                return matchesSearch && matchesGenre;
+            });
+            
+            document.getElementById('bookCount').textContent = 
+                `${books.length} livre(s) dans votre bibliothèque`;
+            
+            if (filteredBooks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>📖 Aucun livre trouvé</h3>
+                        <p>Commencez par ajouter des livres à votre bibliothèque !</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredBooks.map(book => `
+                <div class="book-card">
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-author">par ${book.author}</div>
+                    ${book.year ? `<div class="book-info">📅 ${book.year}</div>` : ''}
+                    ${book.genre ? `<span class="genre-badge">${book.genre}</span>` : ''}
+                    ${book.tropes ? `<div class="book-info">💕 Tropes: ${book.tropes}</div>` : ''}
+                    ${book.notes ? `<div class="book-notes">💭 ${book.notes}</div>` : ''}
+                    <div class="book-actions">
+                        <button class="btn-delete" onclick="deleteBook(${book.id})">Supprimer</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        document.getElementById('bookForm').addEventListener('submit', addBook);
+        document.getElementById('searchInput').addEventListener('input', displayBooks);
+        document.getElementById('filterGenre').addEventListener('change', displayBooks);
+        
+        loadBooks();
+    </script>
+</body>
+</html>
